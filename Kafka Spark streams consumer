@@ -1,0 +1,74 @@
+product_df = (
+  spark.readStream
+    .format("kafka")
+    .option("kafka.bootstrap.servers", "bootstrap servers url")
+    .option("subscribe", "product-topic")
+    .option("kafka.security.protocol", "SASL_SSL")
+    .option("kafka.sasl.mechanism", "PLAIN")
+    .option("kafka.sasl.jaas.config", 
+      "org.apache.kafka.common.security.plain.PlainLoginModule required username='your Kafka Username' password='your Kafka password';")
+    .option("startingOffsets", "latest") 
+    .load()
+)
+# option("startingOffsets", "latest") This means that the query will begin processing data from the latest messages in each topic
+from pyspark.sql.functions import col, from_json
+from pyspark.sql.types import StructType, StringType, DoubleType, IntegerType
+
+product_schema = StructType() \
+  .add("product_id", IntegerType()) \
+  .add("title", StringType()) \
+  .add("category", StringType()) \
+  .add("price", DoubleType())
+
+  ## from_json -Parse the JSON string into structured columns
+
+
+product_stream = product_df.selectExpr("CAST(value AS STRING) as json") \
+    .select(from_json(col("json"), product_schema).alias("data")) \
+    .select("data.*")
+
+
+
+
+feedback_df = (
+  spark.readStream
+    .format("kafka")
+    .option("kafka.bootstrap.servers", "bootstrap servers url")
+    .option("subscribe", "feedback-topic")
+    .option("kafka.security.protocol", "SASL_SSL")
+    .option("kafka.sasl.mechanism", "PLAIN")
+    .option("kafka.sasl.jaas.config", 
+      "org.apache.kafka.common.security.plain.PlainLoginModule required username='your Kafka Username' password='your Kafka password';")
+    .option("startingOffsets", "latest") 
+    .load()
+)
+# option("startingOffsets", "latest") This means that the query will begin processing data from the latest messages in each topic
+
+feedback_schema = StructType() \
+  .add("customer_name", StringType()) \
+  .add("product_id", IntegerType()) \
+  .add("rating", DoubleType()) \
+  .add("review", StringType())
+
+### from_json -Parse the JSON string into structured columns
+
+feedback_stream = feedback_df.selectExpr("CAST(value AS STRING) as json") \
+    .select(from_json(col("json"), feedback_schema).alias("data")) \
+    .select("data.*")
+
+### 🔄 Data Enrichment Layer - We are joining Stream + Stream 
+### and Stream + Batch
+
+customer_info = spark.table("raw_layer_customer_info") #Batch Data
+
+product_feedback = feedback_stream.join(product_stream, "product_id") #Stream + Stream
+
+enriched_df = product_feedback.join(customer_info, "customer_name") # Batch + Stream
+
+###/mnt/checkpoints/enriched_layer/ !
+
+enriched_df.writeStream \
+    .outputMode("append") \
+    .option("checkpointLocation", "/mnt/checkpoints/enriched_layer/") \
+    .toTable("enriched_layer_feedback_product")
+
