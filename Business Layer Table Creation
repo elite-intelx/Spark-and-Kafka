@@ -1,0 +1,50 @@
+%sql
+CREATE TABLE business_layer_product_insights AS
+SELECT
+  category,
+  title AS product_name,
+  COUNT(*) AS total_reviews,
+  ROUND(AVG(rating), 2) AS avg_rating, 
+  ROUND(AVG(price), 2) AS avg_price
+FROM enriched_layer_feedback_product
+GROUP BY category, title;
+
+----Calculates the average rating, avg_price for each product and rounds it to 2 decimal places.
+----  MAX(location) AS trending_location
+-- Pyspark Code
+
+-- from pyspark.sql.functions import col, avg, count, max as max_, round as round_
+
+-- # Read enriched layer table
+-- enriched_df = spark.table("enriched_layer_feedback_product")
+
+-- # Apply transformations
+-- business_df = (
+--     enriched_df.groupBy("category", "title")
+--     .agg(
+--         count("*").alias("total_reviews"),
+--         round_(avg("rating"), 2).alias("avg_rating"),
+--         round_(avg("price"), 2).alias("avg_price"),
+--         max_("location").alias("trending_location")
+--     )
+--     .withColumnRenamed("title", "product_name")
+-- )
+
+-- # Save as a managed Delta table
+-- business_df.write.mode("overwrite").saveAsTable("business_layer_product_insights")
+----------------------------------------------------------------------------------------------------------------
+
+%sql
+CREATE TABLE business_layer_negative_reviews AS
+SELECT *
+FROM enriched_layer_feedback_product
+WHERE LOWER(review) LIKE '%bad%' OR LOWER(review) LIKE '%poor%' OR rating < 3;
+---------------------------------------------------------------------------------------------------------------
+%sql
+CREATE TABLE business_layer_top_products_by_location AS
+SELECT
+  location,
+  title,
+  AVG(rating) AS avg_rating
+FROM enriched_layer_feedback_product
+GROUP BY location, title;
