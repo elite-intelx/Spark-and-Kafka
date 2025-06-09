@@ -1,0 +1,33 @@
+from confluent_kafka import Producer
+import json
+import time
+
+conf = {
+    'bootstrap.servers': 'your bootstrap.servers url',
+    'security.protocol': 'SASL_SSL',
+    'sasl.mechanisms': 'PLAIN',
+    'sasl.username': 'your Kafka Username',
+    'sasl.password': 'your Kafka password'
+}
+
+producer = Producer(conf)
+
+products = [
+    {"product_id": 101, "title": "iPhone 14", "category": "Electronics", "price": 89000},
+    {"product_id": 102, "title": "Dyson Vacuum", "category": "Appliances", "price": 45000},
+    {"product_id": 103, "title": "Sony Headphones", "category": "Electronics", "price": 15000},
+    {"product_id": 104, "title": "Dell XPS 13", "category": "Laptops", "price": 120000},
+    {"product_id": 105, "title": "Apple Watch", "category": "Wearables", "price": 32000},
+    {"product_id": 106, "title": "Samsung TV", "category": "Electronics", "price": 65000},
+    {"product_id": 107, "title": "Nikon D5600", "category": "Cameras", "price": 72000},
+    {"product_id": 108, "title": "Bose SoundLink", "category": "Audio", "price": 18000},
+    {"product_id": 109, "title": "Asus ROG Laptop", "category": "Gaming", "price": 140000},
+    {"product_id": 110, "title": "Fitbit Charge 5", "category": "Wearables", "price": 18000}
+]
+
+for product in products:
+    message = json.dumps(product)
+    producer.produce('product-topic', key=str(product["product_id"]), value=message)
+    print(f"Sent: {message}")
+    producer.flush()
+    time.sleep(1)
