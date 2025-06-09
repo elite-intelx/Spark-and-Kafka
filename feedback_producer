@@ -1,0 +1,33 @@
+from confluent_kafka import Producer
+import json
+import time
+
+conf = {
+    'bootstrap.servers': 'your bootstrap.servers url',
+    'security.protocol': 'SASL_SSL',
+    'sasl.mechanisms': 'PLAIN',
+    'sasl.username': 'your Kafka Username',
+    'sasl.password': 'your Kafka password'
+}
+
+producer = Producer(conf)
+
+feedbacks = [
+    {"customer_name": "Alice Johnson", "product_id": 101, "rating": 4.8, "review": "Excellent phone!"},
+    {"customer_name": "Bob Smith", "product_id": 102, "rating": 3.5, "review": "Powerful but noisy"},
+    {"customer_name": "Charlie Lee", "product_id": 103, "rating": 4.2, "review": "Great sound quality"},
+    {"customer_name": "Diana Paul", "product_id": 104, "rating": 2.5, "review": "Battery drains fast"},
+    {"customer_name": "Eva Mendes", "product_id": 105, "rating": 5.0, "review": "Stylish and useful"},
+    {"customer_name": "Frank Castle", "product_id": 106, "rating": 3.8, "review": "Decent clarity"},
+    {"customer_name": "George Harris", "product_id": 107, "rating": 4.0, "review": "Great for beginners"},
+    {"customer_name": "Hannah Thomas", "product_id": 108, "rating": 4.9, "review": "Rich bass and compact"},
+    {"customer_name": "Ian Wright", "product_id": 109, "rating": 4.3, "review": "Gaming beast"},
+    {"customer_name": "Jenna Park", "product_id": 110, "rating": 4.7, "review": "Very accurate tracker"}
+]
+
+for feedback in feedbacks:
+    message = json.dumps(feedback)
+    producer.produce('feedback-topic', key=feedback["customer_name"], value=message)
+    print(f"Sent: {message}")
+    producer.flush()
+    time.sleep(1)
